@@ -4,7 +4,7 @@ import socket
 import sys
 import json
 
-from .config import *
+from config import *
 
 
 # Get Twitter Streaming OAuth API
@@ -29,7 +29,7 @@ def stream_tweets_to_spark(q, tcp_conn):
         tweet_text = tweet['text']
         print("Tweet Text: " + tweet_text)
         print ("------------------------------------------")
-        tcp_conn.send(tweet_text + '\n')
+        tcp_conn.send(bytes(tweet_text + '\n', 'utf-8'))
         time.sleep(1)
 
 
