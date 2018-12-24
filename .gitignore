@@ -3,4 +3,5 @@ config.py
 tp_auth
 dist
 *.egg-info
+checkpoint_TwitterApp
 
