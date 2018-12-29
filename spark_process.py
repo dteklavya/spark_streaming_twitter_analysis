@@ -2,12 +2,16 @@ from pyspark import SparkConf, SparkContext
 from pyspark.streaming import StreamingContext
 from pyspark.sql import Row, SQLContext
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructField, StructType, StringType
+from pyspark.sql.types import StructField, StructType, StringType, IntegerType
 
 import sys
 import requests
 
 from config import SENTIMENT140_DATA
+from pyspark.ml.classification import NaiveBayes
+from pyspark.ml.linalg import Vectors, Vector
+from pyspark.ml.feature import HashingTF, Tokenizer
+from pyspark.ml import Pipeline, PipelineModel
 
 # Initialize the spark config
 conf = SparkConf().setAppName('TwitterStream').setMaster("local[*]")
@@ -55,9 +59,15 @@ def loadSentiment140(sc, path):
     '''
 
     # Defined Dataframe columns for Sentiment140 data
-    cols = ["polarity", "id", "date", "query", "user", "status"]
-    # Defined schema
-    schema = [ StructField(fname, StringType(), True) for fname in cols ]
+    cols = ["label", "id", "date", "query", "user", "status"]
+
+    schema = [ StructField('label', IntegerType(), True),
+               StructField('id', StringType(), True),
+               StructField('date', StringType(), True),
+               StructField('query', StringType(), True),
+               StructField('user', StringType(), True),
+               StructField('status', StringType(), True),
+                ]
     schema = StructType(schema)
 
     # Load data from CSV and get DataFrame.
@@ -65,9 +75,50 @@ def loadSentiment140(sc, path):
 
     # Drop unwanted columns
     df = df.drop("id", "date", "query", "user")
-    df.show()
+    return (df, spark)
 
 
-loadSentiment140(sc, SENTIMENT140_DATA)
+def createNBModel(sc):
+    (df, spark) = loadSentiment140(sc, SENTIMENT140_DATA)
+
+    tokenizer = Tokenizer(inputCol='status', outputCol='barewords')
+    hashingTF = HashingTF(inputCol=tokenizer.getOutputCol(), outputCol='features')
+
+#     df.foreach(transformFeatures(df.status))
+
+    # DEfined model parameters
+    nb = NaiveBayes(smoothing=1.0, modelType="multinomial")
+
+    # Defined Pipeline
+    pipeline = Pipeline(stages=[tokenizer, hashingTF, nb])
+
+    # Train the data
+    model = pipeline.fit(df)
+
+    # Save the pipeline, overwrite if already present.
+    model.write().overwrite().save('./nbmodel')
+
+    # Load the pipeline from disk.
+    loaded = PipelineModel.load('./nbmodel')
+
+    # Get prediction from loaded PipelineModel
+    test = spark.createDataFrame([(
+        1, 'Just tweeting'
+        )], ['label', 'status'])
+    test.head()
+    prediction = loaded.transform(test)
+
+    selected = prediction.select("label", "status", "probability", "prediction")
+    for row in selected.collect():
+        rid, text, prob, prediction = row
+        print("(%d, %s) --> prob=%s, prediction=%f" % (rid, text, str(prob), prediction))
+
+
+# loadSentiment140(sc, SENTIMENT140_DATA)
+createNBModel(sc)
 sc.stop()
+
+
+def transformFeatures(tweetText):
+    HashingTF(tweetText)
 
