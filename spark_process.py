@@ -13,14 +13,6 @@ from pyspark.ml.linalg import Vectors, Vector
 from pyspark.ml.feature import HashingTF, Tokenizer
 from pyspark.ml import Pipeline, PipelineModel
 
-# Initialize the spark config
-conf = SparkConf().setAppName('TwitterStream').setMaster("local[*]")
-
-# Create the spark context
-sc = SparkContext.getOrCreate(conf=conf)
-# Suppress debug messages
-sc.setLogLevel("ERROR")
-
 
 def read_twitter_stream(sc):
     ssc = StreamingContext(sc, 2)
@@ -111,6 +103,18 @@ def getOrCreateNBModel(sc):
     return model
 
 
+def transformFeatures(tweetText):
+    HashingTF(tweetText)
+
+
+# Initialize the spark config
+conf = SparkConf().setAppName('TwitterStream').setMaster("local[*]")
+
+# Create the spark context
+sc = SparkContext.getOrCreate(conf=conf)
+# Suppress debug messages
+sc.setLogLevel("ERROR")
+
 # loadSentiment140(sc, SENTIMENT140_DATA)
 model = getOrCreateNBModel(sc)
 spark = SparkSession(sc)
@@ -128,8 +132,3 @@ for row in selected.collect():
     print("(%d, %s) --> prob=%s, prediction=%f" % (rid, text, str(prob), prediction))
 
 sc.stop()
-
-
-def transformFeatures(tweetText):
-    HashingTF(tweetText)
-
