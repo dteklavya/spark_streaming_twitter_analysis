@@ -78,7 +78,17 @@ def loadSentiment140(sc, path):
     return (df, spark)
 
 
-def createNBModel(sc):
+def getOrCreateNBModel(sc):
+
+    # Load the pipeline from disk.
+    loaded = PipelineModel.load('./nbmodel')
+
+    # Returned the model loaded from the disk if found
+    if loaded:
+        return loaded
+
+    # Else create the model/PipelineModel, save and return it.
+
     (df, spark) = loadSentiment140(sc, SENTIMENT140_DATA)
 
     tokenizer = Tokenizer(inputCol='status', outputCol='barewords')
@@ -86,7 +96,7 @@ def createNBModel(sc):
 
 #     df.foreach(transformFeatures(df.status))
 
-    # DEfined model parameters
+    # Defined model parameters
     nb = NaiveBayes(smoothing=1.0, modelType="multinomial")
 
     # Defined Pipeline
@@ -98,24 +108,25 @@ def createNBModel(sc):
     # Save the pipeline, overwrite if already present.
     model.write().overwrite().save('./nbmodel')
 
-    # Load the pipeline from disk.
-    loaded = PipelineModel.load('./nbmodel')
-
-    # Get prediction from loaded PipelineModel
-    test = spark.createDataFrame([(
-        1, 'Just tweeting'
-        )], ['label', 'status'])
-    test.head()
-    prediction = loaded.transform(test)
-
-    selected = prediction.select("label", "status", "probability", "prediction")
-    for row in selected.collect():
-        rid, text, prob, prediction = row
-        print("(%d, %s) --> prob=%s, prediction=%f" % (rid, text, str(prob), prediction))
+    return model
 
 
 # loadSentiment140(sc, SENTIMENT140_DATA)
-createNBModel(sc)
+model = getOrCreateNBModel(sc)
+spark = SparkSession(sc)
+
+# Get prediction from loaded PipelineModel
+test = spark.createDataFrame([(
+    1, 'Just tweeting!'
+    )], ['label', 'status'])
+test.head()
+prediction = model.transform(test)
+
+selected = prediction.select("label", "status", "probability", "prediction")
+for row in selected.collect():
+    rid, text, prob, prediction = row
+    print("(%d, %s) --> prob=%s, prediction=%f" % (rid, text, str(prob), prediction))
+
 sc.stop()
 
 
