@@ -12,6 +12,7 @@ from pyspark.ml.classification import NaiveBayes
 from pyspark.ml.linalg import Vectors, Vector
 from pyspark.ml.feature import HashingTF, Tokenizer
 from pyspark.ml import Pipeline, PipelineModel
+from pyspark.ml.feature import StopWordsRemover
 
 
 def read_twitter_stream(sc):
@@ -84,15 +85,17 @@ def getOrCreateNBModel(sc):
     (df, spark) = loadSentiment140(sc, SENTIMENT140_DATA)
 
     tokenizer = Tokenizer(inputCol='status', outputCol='barewords')
-    hashingTF = HashingTF(inputCol=tokenizer.getOutputCol(), outputCol='features')
 
-#     df.foreach(transformFeatures(df.status))
+    remover = StopWordsRemover(inputCol='barewords', outputCol='filtered')# , stopWords=removeStopWords())
+#     print('Remover', remover.transform(df).head())
+
+    hashingTF = HashingTF(inputCol=tokenizer.getOutputCol(), outputCol='features')
 
     # Defined model parameters
     nb = NaiveBayes(smoothing=1.0, modelType="multinomial")
 
     # Defined Pipeline
-    pipeline = Pipeline(stages=[tokenizer, hashingTF, nb])
+    pipeline = Pipeline(stages=[tokenizer, remover, hashingTF, nb])
 
     # Train the data
     model = pipeline.fit(df)
@@ -107,11 +110,18 @@ def transformFeatures(tweetText):
     HashingTF(tweetText)
 
 
+def removeStopWords():
+    with open('NLTK_English_Stopwords_Corpus.txt', 'r') as f:
+        lines = f.read().splitlines()
+    return lines
+
+
 # Initialize the spark config
 conf = SparkConf().setAppName('TwitterStream').setMaster("local[*]")
 
 # Create the spark context
 sc = SparkContext.getOrCreate(conf=conf)
+
 # Suppress debug messages
 sc.setLogLevel("ERROR")
 
