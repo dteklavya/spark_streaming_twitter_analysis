@@ -89,7 +89,7 @@ def getOrCreateNBModel(sc):
     remover = StopWordsRemover(inputCol='barewords', outputCol='filtered')# , stopWords=removeStopWords())
 #     print('Remover', remover.transform(df).head())
 
-    hashingTF = HashingTF(inputCol=tokenizer.getOutputCol(), outputCol='features')
+    hashingTF = HashingTF(inputCol=remover.getOutputCol(), outputCol='features')
 
     # Defined model parameters
     nb = NaiveBayes(smoothing=1.0, modelType="multinomial")
