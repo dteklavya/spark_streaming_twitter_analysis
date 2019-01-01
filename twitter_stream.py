@@ -42,6 +42,6 @@ s.listen(1)
 print("Waiting for TCP connection...")
 conn, addr = s.accept()
 print("Connected... Starting getting tweets.")
-q = 'Erdogan'
+q = 'Happy_New_Year_2019'
 stream_tweets_to_spark(q, conn)
 
