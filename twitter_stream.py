@@ -3,6 +3,7 @@ import time
 import socket
 import sys
 import json
+from langdetect import detect
 
 from config import *
 
@@ -26,7 +27,10 @@ def stream_tweets_to_spark(q, tcp_conn):
 
     for tweet in stream:
 #         yield tweet['text']
+        print("LANG:", tweet['lang'])
         tweet_text = tweet['text']
+        if detect(tweet_text) != 'en':
+            continue
         print("Tweet Text: " + tweet_text)
         print ("------------------------------------------")
         tcp_conn.send(bytes(tweet_text + '\n', 'utf-8'))
@@ -42,6 +46,6 @@ s.listen(1)
 print("Waiting for TCP connection...")
 conn, addr = s.accept()
 print("Connected... Starting getting tweets.")
-q = 'Happy_New_Year_2019'
+q = 'ModiOnceMore'
 stream_tweets_to_spark(q, conn)
 

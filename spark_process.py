@@ -12,11 +12,12 @@ from pyspark.ml import Pipeline, PipelineModel
 from pyspark.ml.feature import StopWordsRemover
 
 import nltk
-from pyspark import keyword_only  # # < 2.0 -> pyspark.ml.util.keyword_only
+from pyspark import keyword_only
 from pyspark.ml import Transformer
 from pyspark.ml.param.shared import HasInputCol, HasOutputCol, Param
 from pyspark.sql.functions import udf
-from pyspark.sql.types import ArrayType, StringType
+from pyspark.sql.types import ArrayType
+from pyspark.sql.functions import lit
 
 import re
 
@@ -65,26 +66,43 @@ class TweetSanitizer(Transformer, HasInputCol, HasOutputCol):
         return dataset.withColumn(out_col, udf(f, t)(in_col))
 
 
-def read_twitter_stream(sc):
-    ssc = StreamingContext(sc, 2)
+def read_twitter_stream(model, sc):
 
-    ssc.checkpoint("checkpoint_TwitterApp")
+    spark = SparkSession(sc)
 
-    dataStream = ssc.socketTextStream("localhost", 9009)
+    socketDF = spark \
+    .readStream \
+    .format("socket") \
+    .option("host", "localhost") \
+    .option("port", 9009) \
+    .load()
 
-    words = dataStream.flatMap(lambda line: print("IS THIS LINE:", line))
-    print(words, type(dataStream))
+    # Add a field 'label' and...
+    # Rename the column to 'status'
 
-    dataStream.pprint(num=2)
+    socketDF = socketDF.withColumn("label", lit(0))
+    socketDF = socketDF.withColumnRenamed("value", "status")
+#     print("COLUMNS:", socketDF.columns, socketDF["status"])
+#     socketDF.printSchema()
 
-    # start the streaming computation
-    ssc.start()
+    prediction = getTweetSentiment(model, socketDF)
+
+    print(prediction)
+
+    query1 = prediction \
+        .writeStream \
+        .outputMode("append") \
+        .format("console") \
+        .start()
+
+#     selected = prediction.select("label", "status", "probability", "prediction", "filtered")
+#     for row in selected.collect():
+#         rid, text, prob, prediction, filtered = row
+#         print("(%d, %s) --> prob=%s, prediction=%f, filtered=%s" % (rid, text, str(prob), prediction, filtered))
+
     # wait for the streaming to finish
-    try:
-        ssc.awaitTermination()
-    except KeyboardInterrupt:
-        print("STOPPING...!!!")
-        ssc.stop()
+    query1.awaitTermination()
+#     socketDF.show(n=1, truncate=False)
 
 
 def loadSentiment140(sc, path):
@@ -170,6 +188,11 @@ def removeStopWords():
     return lines
 
 
+def getTweetSentiment(model, df):
+    prediction = model.transform(df)
+    return prediction
+
+
 # Initialize the spark config
 conf = SparkConf().setAppName('TwitterStream').setMaster("local[*]")
 
@@ -179,24 +202,9 @@ sc = SparkContext.getOrCreate(conf=conf)
 # Suppress debug messages
 sc.setLogLevel("ERROR")
 
-# read_twitter_stream(sc)
-# exit(0)
-
-# loadSentiment140(sc, SENTIMENT140_DATA)
+# Create Naive Bayes model
 model = getOrCreateNBModel(sc)
-spark = SparkSession(sc)
 
-# Get prediction from loaded PipelineModel
-test = spark.createDataFrame([(
-    1, 'Just tweeting!'
-    )], ['label', 'status'])
-test.head()
-prediction = model.transform(test)
-print(prediction)
-
-selected = prediction.select("label", "status", "probability", "prediction", "filtered")
-for row in selected.collect():
-    rid, text, prob, prediction, filtered = row
-    print("(%d, %s) --> prob=%s, prediction=%f, filtered=%s" % (rid, text, str(prob), prediction, filtered))
+read_twitter_stream(model, sc)
 
 sc.stop()
