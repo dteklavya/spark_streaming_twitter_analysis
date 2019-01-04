@@ -66,6 +66,12 @@ class TweetSanitizer(Transformer, HasInputCol, HasOutputCol):
         return dataset.withColumn(out_col, udf(f, t)(in_col))
 
 
+def process_row(row):
+    status, label, filtered, features, rawPrediction, probability, prediction = row
+    print(row)
+    print(status, label, prediction)
+
+
 def read_twitter_stream(model, sc):
 
     spark = SparkSession(sc)
@@ -89,11 +95,8 @@ def read_twitter_stream(model, sc):
 
     print(prediction)
 
-    query1 = prediction \
-        .writeStream \
-        .outputMode("append") \
-        .format("console") \
-        .start()
+    query1 = prediction.writeStream.foreach(process_row) \
+            .start()
 
 #     selected = prediction.select("label", "status", "probability", "prediction", "filtered")
 #     for row in selected.collect():
