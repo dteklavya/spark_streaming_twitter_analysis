@@ -67,9 +67,23 @@ class TweetSanitizer(Transformer, HasInputCol, HasOutputCol):
 
 
 def process_row(row):
-    status, label, filtered, features, rawPrediction, probability, prediction = row
-    print(row)
-    print(status, label, prediction)
+#     print(row.toJSON().collect())
+    prediction, count = row
+    sentiment = ''
+    if prediction == 1:
+        sentiment = 'Positive'
+    else:
+        sentiment = 'Negative'
+    print(sentiment, count)
+    import requests
+
+    url = 'http://localhost:9999/updateData'
+    request_data = {'sentiment': sentiment, 'count': str(count)}
+    response = requests.post(url, data=request_data)
+    print(response)
+
+#     status, label, filtered, features, rawPrediction, probability, prediction, pred_agg = row
+#     print(label, prediction, pred_agg)
 
 
 def read_twitter_stream(model, sc):
@@ -93,9 +107,19 @@ def read_twitter_stream(model, sc):
 
     prediction = getTweetSentiment(model, socketDF)
 
-    print(prediction)
+#     print(prediction)
+    from pyspark.sql.functions import sum as _sum
+    prediction.printSchema()
+    print(prediction.schema)
+    prediction = prediction.groupBy("prediction") \
+                    .count().alias('sentiment_sum')
 
-    query1 = prediction.writeStream.foreach(process_row) \
+    prediction.printSchema()
+    print(prediction.schema)
+#     print(prediction.toJSON().collect())
+    query1 = prediction.writeStream \
+            .outputMode("update") \
+            .foreach(process_row) \
             .start()
 
 #     selected = prediction.select("label", "status", "probability", "prediction", "filtered")
