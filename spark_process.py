@@ -20,6 +20,13 @@ from pyspark.sql.types import ArrayType
 from pyspark.sql.functions import lit
 
 import re
+import redis
+import json
+import requests
+
+r = redis.StrictRedis(host='localhost', port=6379)
+p = r.pubsub()
+r.publish('TwitterSentiments', 'START')
 
 
 class TweetSanitizer(Transformer, HasInputCol, HasOutputCol):
@@ -74,12 +81,10 @@ def process_row(row):
         sentiment = 'Positive'
     else:
         sentiment = 'Negative'
-    print(sentiment, count)
-    import requests
 
     url = 'http://localhost:9999/updateData'
-    request_data = {'sentiment': sentiment, 'count': str(count)}
-    response = requests.post(url, data=request_data)
+    request_data = json.dumps({'sentiment': sentiment, 'count': count})
+    response = requests.post(url, data=request_data, headers={'Content-Type': 'application/json'})
     print(response)
 
 #     status, label, filtered, features, rawPrediction, probability, prediction, pred_agg = row
@@ -115,7 +120,7 @@ def read_twitter_stream(model, sc):
                     .count().alias('sentiment_sum')
 
     prediction.printSchema()
-    print(prediction.schema)
+    print(type(prediction), prediction.schema)
 #     print(prediction.toJSON().collect())
     query1 = prediction.writeStream \
             .outputMode("update") \
