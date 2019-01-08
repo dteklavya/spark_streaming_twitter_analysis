@@ -18,10 +18,11 @@ body {
 }
 #subtext1 {
     text-align: center;
-    padding-top: 10px;
+    padding-top: 50px;
 }
 #subtext2 {
     text-align: center;
+    padding-top: 50px;
     padding-bottom: 5px;
 }
 
@@ -31,12 +32,9 @@ body {
 
 h1 {
     display: inline;
-    text-transform: uppercase;
     text-shadow: 0 1px white, 0 1px #777;
     text-align: center;
     color: #E5DBD2;
-    text-decoration: underline;
-    border-bottom: double 3px;
     font-size: 26px;
 }
 h3 {

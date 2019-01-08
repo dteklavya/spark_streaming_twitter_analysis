@@ -8,20 +8,54 @@
 
 
 <body>
-  <a href=""><img style="position: absolute; top: 0; right: 0; border: 0;" src="" alt="Fork on GitHub" data-canonical-src=""></a>
+  <!--<a href=""><img style="position: absolute; top: 0; right: 0; border: 0;" src="" alt="Fork on GitHub" data-canonical-src=""></a>-->
   <div id="header">
     <h1>Twitter Sentiment Analysis with Spark MLlib</h1>
   </div>
   
-  <div ng-app="">
-  	<p ng-model="name"></p>
-  	<p ng-bind="name"></p>
-	</div>
   
   
   <div id="subtext1">
     <h3>
-      <span class="underline">Tech Stack</span>: Python, PySpark {MLlib, Streaming, SQL}, Stanford CoreNLP, Redis, Flask and AngularJS.
+      <span class="underline">Tech Stack</span>: Python, PySpark (MLlib, Streaming, SQL), Naive Bayes NLP, Redis, Flask and AngularJS.
     </h3>
   </div>
+  
+    <script>
+	  	var app = angular.module('TweetUpdates', []);
+	  	
+		  	app.config(['$interpolateProvider', function($interpolateProvider) {
+		  	  $interpolateProvider.startSymbol('{|');
+		  	  $interpolateProvider.endSymbol('|}');
+		  	}]);
+	  	
+		    app.controller('StController', ['$scope', '$http', '$interval', function($scope, $http, $interval) {
+		      $scope.name = 'Whirled';
+		      
+		      // $scope.data = {'Positive': 1, 'Negative': 0};
+		      
+		      $interval(function() {
+			      $http.get('http://localhost:9999/stream')
+			      	.then(function(response) {
+			      	$scope.data = response.data;
+			      });
+		      }, 5000);
+		      
+		    }]);
+	</script>
+
+  <div id="subtext2" ng-app="TweetUpdates" ng-controller="StController">
+  	<div style="display:inline;">Positive
+  		<p style="display:inline; padding-left:10px;" ng-bind="data.Positive"></p>
+  	</div>
+  	
+  	<div>Negative
+  		<p style="display:inline; padding-left:10px;" ng-bind="data.Negative"></p>
+  	</div>
+  	
+	</div>
+  
+  
+  
+  
 </body>

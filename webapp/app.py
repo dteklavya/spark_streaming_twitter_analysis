@@ -28,26 +28,15 @@ def show_homepage():
 def stream():
     app.logger.info("Stream: " + request.remote_addr)
 #     return Response(event_stream(), mimetype="text/event-stream")
-    data = r.get('TweetSentiments')
-    data = data.decode()
+    pc = r.get('Positive').decode()
+    nc = r.get('Negative').decode()
+
+    data = {'Positive': pc, 'Negative': nc}
+#     data = data.decode()
 #     print(data, type(data))
-    data = json.loads(data)
+#     data = json.loads(data)
     rdata = json.dumps(data)
     resp = Response(rdata, status=200, mimetype='application/json')
-    return resp
-
-
-@app.route('/hello', methods=['GET'])
-def api_hello():
-    data = {
-        'hello'  : 'world',
-        'number' : 3
-    }
-    js = json.dumps(data)
-
-    resp = Response(js, status=200, mimetype='application/json')
-    resp.headers['Link'] = 'http://luisrei.com'
-
     return resp
 
 
@@ -71,6 +60,6 @@ if __name__ == '__main__':
     handler.setFormatter(formatter)
     app.logger.addHandler(handler)
     app.logger.setLevel(logging.INFO)
-    app.run(threaded=True,
+    app.run(threaded=True, debug=True,
     host='0.0.0.0',
     port='9999')
