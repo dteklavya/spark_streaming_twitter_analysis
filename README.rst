@@ -43,7 +43,7 @@ Quick Start
     
 3. Start the Flask app like so::
 
-		python webapp/app.py
+    $ python webapp/app.py
     
 4. Once all the services are running, point the browser to http://localhost:9999/
 
