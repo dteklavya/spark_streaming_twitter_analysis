@@ -5,3 +5,5 @@ dist
 *.egg-info
 checkpoint_TwitterApp
 Sentiment140
+NLTK_English_Stopwords_Corpus.txt
+nbmodel
