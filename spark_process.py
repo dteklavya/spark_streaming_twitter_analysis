@@ -91,7 +91,7 @@ def process_row(row):
 #     print(label, prediction, pred_agg)
 
 
-def read_twitter_stream(model, sc):
+def process_twitter_stream(model, sc):
 
     spark = SparkSession(sc)
 
@@ -237,6 +237,6 @@ sc.setLogLevel("ERROR")
 # Create Naive Bayes model
 model = getOrCreateNBModel(sc)
 
-read_twitter_stream(model, sc)
+process_twitter_stream(model, sc)
 
 sc.stop()
