@@ -17,9 +17,7 @@ Twitter setup
 Apache Spark Setup
 ------------------
 
-This code works with Spark version 2.4, download here_.
-
-.. _here https://spark.apache.org/releases/spark-release-2-4-0.html
+This code works with Spark version 2.4, download `here <https://spark.apache.org/releases/spark-release-2-4-0.html>`_.
 
 Once downloaded, make sure that environment variables SPARK_HOME and PYTHONPATH point to /path/to/spark//spark-2.4.0 and /path/to/spark//spark-2.4.0/python respectively.
 
