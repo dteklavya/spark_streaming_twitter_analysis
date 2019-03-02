@@ -105,10 +105,11 @@ def process_twitter_stream(model, sc):
     # Add a field 'label' and...
     # Rename the column to 'status'
 
+    socketDF.printSchema()
+    print("COLUMNS:", socketDF.columns)# , socketDF["status"])
+
     socketDF = socketDF.withColumn("label", lit(0))
     socketDF = socketDF.withColumnRenamed("value", "status")
-#     print("COLUMNS:", socketDF.columns, socketDF["status"])
-#     socketDF.printSchema()
 
     prediction = getTweetSentiment(model, socketDF)
 
